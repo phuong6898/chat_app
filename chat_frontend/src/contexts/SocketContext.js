@@ -28,11 +28,12 @@ export const SocketProvider = ({ children }) => {
             isAuthenticated, 
             token: token ? 'present' : 'missing', 
             user: user ? 'present' : 'missing',
-            tokenValue: token ? token.substring(0, 20) + '...' : 'missing'
+            tokenValue: token ? token.substring(0, 20) + '...' : 'missing',
+            userId: user?.userId
         });
         
-        if (isAuthenticated && token && user) {
-            console.log('SocketContext - Initializing socket for user:', user);
+        if (isAuthenticated && token && user && user.userId) {
+            console.log('SocketContext - All conditions met, initializing socket for user:', user.userId);
             console.log('SocketContext - Token being passed to initializeSocket:', token ? 'present' : 'missing');
             const socketInstance = initializeSocket(token);
             console.log('SocketContext - Socket instance created:', socketInstance ? 'success' : 'failed');
@@ -65,7 +66,8 @@ export const SocketProvider = ({ children }) => {
             console.log('SocketContext - Not initializing socket because:', {
                 isAuthenticated,
                 hasToken: !!token,
-                hasUser: !!user
+                hasUser: !!user,
+                hasUserId: !!(user && user.userId)
             });
         }
     }, [isAuthenticated, token, user]);

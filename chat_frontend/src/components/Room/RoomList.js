@@ -82,7 +82,7 @@ const RoomList = ({onRoomSelect}) => {
                     <div
                         key={room._id}
                         className="room-item"
-                        onClick={() => onRoomSelect(room)}
+                        onClick={() => onRoomSelect(room, 'room')}
                         style={{
                             display: 'flex',
                             alignItems: 'center',

@@ -5,15 +5,22 @@ const Message = require('../models/Message');
 module.exports = (io) => {
     io.use((socket, next) => {
         const token = socket.handshake.auth.token;
-        if (!token) return next(new Error('Authentication error'));
+        console.log('Socket auth - Token received:', token ? token.substring(0, 20) + '...' : 'missing');
+        console.log('Socket auth - JWT_SECRET:', process.env.JWT_SECRET ? 'present' : 'missing');
+        
+        if (!token) {
+            console.log('Socket auth - No token provided');
+            return next(new Error('Authentication error'));
+        }
 
         try {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            console.log('Socket auth - Token verified successfully:', { userId: decoded.userId, username: decoded.username });
             socket.userId = decoded.userId;
             socket.username = decoded.username;
             next();
         } catch (err) {
-            console.error('JWT verification error:', err);
+            console.error('Socket auth - JWT verification error:', err.message);
             next(new Error('Authentication error'));
         }
     });

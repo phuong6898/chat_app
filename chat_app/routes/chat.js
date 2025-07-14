@@ -53,4 +53,44 @@ router.get('/private/:friendId', auth, async (req, res) => {
   }
 });
 
+// Lấy tin nhắn trong phòng chat
+router.get('/room/:roomId', auth, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const userId = req.user.userId;
+
+    console.log('Chat route - Getting room messages for room:', roomId, 'user:', userId);
+
+    // Kiểm tra user có trong phòng không
+    const Room = require('../models/Room');
+    const room = await Room.findById(roomId);
+    
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+
+    // Kiểm tra user có là thành viên của phòng không
+    const isMember = room.members.some(member => 
+      member.toString() === userId || 
+      (member._id && member._id.toString() === userId)
+    );
+
+    if (!isMember) {
+      return res.status(403).json({ error: 'You are not a member of this room' });
+    }
+
+    // Lấy tin nhắn trong phòng
+    const messages = await Message.find({ room: roomId })
+      .sort({ timestamp: 1 })
+      .populate('sender', 'username avatarUrl');
+
+    console.log('Chat route - Found room messages:', messages.length);
+
+    res.json(messages);
+  } catch (err) {
+    console.error('Chat route - Error getting room messages:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

@@ -10,7 +10,7 @@ let privateMessageHandlers = [];
 export const initializeSocket = (token) => {
     if (socket) return socket;
 
-    console.log('Initializing socket with token:', token ? 'present' : 'missing');
+    console.log('Initializing socket with token:', token ? token.substring(0, 20) + '...' : 'missing');
     socket = io(SOCKET_URL, {
         auth: { token },
         transports: ['websocket'],

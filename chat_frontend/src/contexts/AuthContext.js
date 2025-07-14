@@ -19,9 +19,24 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     const isValidJWT = (token) => {
-        const isValid = typeof token === 'string' && token.split('.').length === 3;
-        console.log('AuthContext - JWT validation:', { token: token ? 'present' : 'missing', isValid });
-        return isValid;
+        if (!token || typeof token !== 'string') return false;
+        
+        try {
+            const decoded = jwtDecode(token);
+            const currentTime = Date.now() / 1000;
+            const isValid = decoded.exp > currentTime;
+            console.log('AuthContext - JWT validation:', { 
+                token: token ? 'present' : 'missing', 
+                isValid,
+                exp: decoded.exp,
+                currentTime,
+                isExpired: decoded.exp <= currentTime
+            });
+            return isValid;
+        } catch (error) {
+            console.log('AuthContext - JWT validation failed:', error.message);
+            return false;
+        }
     };
 
     useEffect(() => {
@@ -33,52 +48,69 @@ export const AuthProvider = ({ children }) => {
                 try {
                     const decoded = jwtDecode(storedToken);
                     console.log('AuthContext - Decoded token:', decoded);
-                    const response = await api.get(`/users/${decoded.userId}`, {
-                        headers: { 'x-auth-token': storedToken }
-                    });
+                    
+                    // Set token header trước khi gọi API
+                    api.defaults.headers['x-auth-token'] = storedToken;
+                    
+                    // Sử dụng đúng endpoint /auth/profile
+                    const response = await api.get('/auth/profile');
                     console.log('AuthContext - User data:', response.data);
                     setUser({ ...response.data, userId: decoded.userId });
-                    setToken(storedToken); // Ensure token state is set
-                    api.defaults.headers['x-auth-token'] = storedToken;
+                    setToken(storedToken);
                 } catch (error) {
                     console.error('Failed to fetch user data:', error);
-                    logout();
+                    // Nếu fetch thất bại, clear auth
+                    clearAuth();
                 }
+            } else if (storedToken) {
+                console.log('AuthContext - Invalid or expired token, clearing auth');
+                clearAuth();
             }
             setLoading(false);
         };
 
         initializeAuth();
-    }, []);
+    }, []); // Chỉ chạy 1 lần khi mount, không phụ thuộc [token]
 
     const login = async (newToken) => {
-        if (!newToken || !isValidJWT(newToken)) return;
+        if (!newToken || !isValidJWT(newToken)) {
+            console.error('AuthContext - Invalid token provided to login');
+            return false;
+        }
 
         console.log('AuthContext - Login with token:', newToken ? 'present' : 'missing');
-        console.log('AuthContext - Setting token in localStorage and state');
-        localStorage.setItem('token', newToken);
-        setToken(newToken);
         
-        // Verify token was set correctly
-        const storedToken = localStorage.getItem('token');
-        console.log('AuthContext - Token verification after set:', storedToken ? 'present' : 'missing');
-
         try {
-            const decoded = jwtDecode(newToken);
-            console.log('AuthContext - Login decoded token:', decoded);
-            const response = await api.get(`/users/${decoded.userId}`, {
-                headers: { 'x-auth-token': newToken }
-            });
-            console.log('AuthContext - Login user data:', response.data);
-            setUser({ ...response.data, userId: decoded.userId });
+            // 1. Lưu token & cập nhật header ngay
+            localStorage.setItem('token', newToken);
+            setToken(newToken);
             api.defaults.headers['x-auth-token'] = newToken;
-        } catch (error) {
-            console.error('Failed to fetch user data after login:', error);
+
+            // 2. Fetch profile luôn ở đây, setUser xong mới return
+            const { data } = await api.get('/auth/profile');
+            const decoded = jwtDecode(newToken);
+            setUser({ ...data, userId: decoded.userId });
+            console.log('AuthContext - Login successful, user set:', data);
+            return true;   // <-- trả về thành công
+        } catch (err) {
+            console.error('Login: Failed to fetch profile', err);
+            // nếu profile ko lấy đc, logout luôn
+            logout();
+            return false;  // <-- trả về thất bại
         }
     };
 
     const logout = () => {
         console.log('AuthContext - Logout');
+        localStorage.removeItem('token');
+        setToken(null);
+        setUser(null);
+        delete api.defaults.headers['x-auth-token'];
+    };
+
+    // Tách riêng hàm logout để tránh vòng lặp vô hạn
+    const clearAuth = () => {
+        console.log('AuthContext - Clearing auth');
         localStorage.removeItem('token');
         setToken(null);
         setUser(null);

@@ -8,8 +8,18 @@ const authMiddleware = require('../middleware/auth');
 router.post('/register', authController.register);
 router.post('/login', authController.login);
 router.get('/profile', authMiddleware, async (req, res) => {
-    const user = await User.findById(req.user.userId).select('-password');
-    res.json(user);
+    console.log('Auth route - Profile request from user:', req.user.userId);
+    try {
+        const user = await User.findById(req.user.userId).select('-password');
+        console.log('Auth route - Found user:', user ? 'yes' : 'no');
+        if (user) {
+            console.log('Auth route - User data:', { _id: user._id, username: user.username });
+        }
+        res.json(user);
+    } catch (error) {
+        console.error('Auth route - Error fetching profile:', error);
+        res.status(500).json({ error: 'Failed to fetch profile' });
+    }
 });
 router.post('/refresh', async (req, res) => {
     const token = req.cookies.refreshToken;

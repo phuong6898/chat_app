@@ -693,3 +693,57 @@ body {
 .p-2 {
     padding: 1rem;
 }
+
+/* --------------------------------------------------
+   Emoji picker container tổng
+-------------------------------------------------- */
+.emoji-picker-react {
+  width: 320px !important;
+  max-height: 300px !important;
+  overflow: hidden !important;
+  border: 1px solid #e1e1e1 !important;
+  border-radius: 8px !important;
+  background: white !important;
+}
+/* Fix emoji picker tab icon và search */
+.emoji-picker-react .epr-emoji-categories button {
+  background: transparent !important;
+  border: none !important;
+  padding: 4px !important;
+  filter: none !important;
+}
+.emoji-picker-react .epr-emoji-categories button svg,
+.emoji-picker-react .epr-emoji-categories button img {
+  display: block !important;
+  width: 20px !important;
+  height: 20px !important;
+  filter: none !important;
+}
+.emoji-picker-react .epr-emoji-categories button.epr-active {
+  background: #f0f0f0 !important;
+  border-radius: 6px !important;
+}
+.emoji-picker-react .epr-search {
+  position: relative !important;
+  margin: 8px !important;
+}
+.emoji-picker-react .epr-search input {
+  padding-left: 45px !important;
+}
+.emoji-picker-react .epr-search svg {
+  position: absolute !important;
+  top: 50% !important;
+  left: 12px !important;
+  transform: translateY(-50%) !important;
+  width: 18px !important;
+  height: 18px !important;
+  fill: #888 !important;
+  pointer-events: none;
+}
+.emoji-picker-react .epr-emoji-scroll-wrapper {
+  max-height: 240px !important;
+  overflow-y: auto !important;
+}
+.emoji-picker-react .epr-skin-tones {
+  display: none !important;
+}

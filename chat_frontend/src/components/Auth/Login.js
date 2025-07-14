@@ -29,9 +29,19 @@ const Login = () => {
         try {
             const response = await authAPI.login(formData);
             const newToken = response.data.accessToken;
-            login(newToken);
-            navigate('/chat');
+            
+            // Đợi login hoàn thành và kiểm tra kết quả
+            const loginSuccess = await login(newToken);
+            
+            if (loginSuccess) {
+                console.log('Login component - Login successful, navigating to chat');
+                navigate('/chat');
+            } else {
+                console.error('Login component - Login failed');
+                setError('Đăng nhập thất bại - không thể lấy thông tin người dùng');
+            }
         } catch (err) {
+            console.error('Login component - Login error:', err);
             setError(err.response?.data?.error || 'Đăng nhập thất bại');
         } finally {
             setLoading(false);

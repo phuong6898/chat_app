@@ -71,13 +71,10 @@ const Sidebar = ({onChatSelect}) => {
             )}
 
             {showCreateRoom && (
-                // <CreateRoom onClose={(create) =>{ setShowCreateRoom(false)}} currentUser={user}/>
                 <CreateRoom
                     onClose={(create) => {
                         setShowCreateRoom(false);
-                        if (create) {
-                            fetchRooms(); // gọi lại danh sách phòng
-                        }
+                        // Không cần fetchRooms vì RoomList sẽ tự động refresh
                     }}
                     currentUser={user}
                 />
