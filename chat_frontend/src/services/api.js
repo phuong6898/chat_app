@@ -63,6 +63,8 @@ export const messagesAPI = {
     deleteMessage: (messageId) => api.delete(`/messages/${messageId}`),
     getRoomMessages: (roomId) => api.get(`/chat/room/${roomId}`),
     startPrivateChat: (receiverId) => api.post('/chat/private/start', { receiverId }),
+    recallOrDeleteMessage: (messageId) => api.post(`/chat/message/${messageId}/recall-or-delete`),
+    markMessagesAsRead: (messageIds) => api.post('/chat/message/mark-read', { messageIds }),
 };
 
 export default api;

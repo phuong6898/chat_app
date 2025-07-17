@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Message = require('../models/Message');
 const auth = require('../middleware/auth');
+const messageController = require('../controllers/messageController');
 
 // Lấy tin nhắn riêng giữa 2 user
 router.get('/private/:friendId', auth, async (req, res) => {
@@ -52,6 +53,12 @@ router.get('/private/:friendId', auth, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Thu hồi hoặc xóa tin nhắn (áp dụng cho cả chat riêng và phòng)
+router.post('/message/:messageId/recall-or-delete', auth, messageController.recallOrDeleteMessage);
+
+// Đánh dấu tin nhắn đã đọc
+router.post('/message/mark-read', auth, messageController.markAsRead);
 
 // Lấy tin nhắn trong phòng chat
 router.get('/room/:roomId', auth, async (req, res) => {

@@ -42,7 +42,8 @@ export const SocketProvider = ({ children }) => {
             socketInstance.userId = user.userId;
             console.log('SocketContext - Set socket userId:', user.userId);
 
-            socketInstance.on('userOnline', (users) => {
+            // Lắng nghe sự kiện onlineUsers (đúng tên backend gửi)
+            socketInstance.on('onlineUsers', (users) => {
                 console.log('SocketContext - Users online:', users);
                 setOnlineUsers(users);
             });

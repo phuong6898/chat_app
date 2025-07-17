@@ -2,6 +2,9 @@ const jwt = require('jsonwebtoken');
 const Room = require('../models/Room');
 const Message = require('../models/Message');
 
+// Thêm biến toàn cục lưu danh sách userId đang online
+const onlineUsers = new Set();
+
 module.exports = (io) => {
     io.use((socket, next) => {
         const token = socket.handshake.auth.token;
@@ -29,7 +32,10 @@ module.exports = (io) => {
         console.log(`User connected: ${socket.userId}`);
         socket.join(`user_${socket.userId}`);
         console.log(`Socket ${socket.id} joined room user_${socket.userId}`);
-        socket.broadcast.emit('userOnline', socket.userId);
+        
+        // Thêm user vào danh sách online và broadcast toàn bộ danh sách
+        onlineUsers.add(socket.userId);
+        io.emit('onlineUsers', Array.from(onlineUsers));
 
         socket.on('joinRoom', async (roomId) => {
             try {
@@ -69,10 +75,10 @@ module.exports = (io) => {
                 const populatedMessage = await Message.findById(message._id)
                     .populate('sender', 'username avatarUrl');
 
-                // THÊM TEMP ID VÀO PHẢN HỒI
+              
                 const responseMessage = {
                     ...populatedMessage.toObject(),
-                    tempId // GỬI LẠI TEMP ID CHO FE
+                    tempId
                 };
 
                 // GỬI TIN NHẮN ĐẾN PHÒNG
@@ -124,8 +130,7 @@ module.exports = (io) => {
                 await message.save();
                 
                 console.log('Message saved:', message);
-                
-                // Populate thông tin người gửi
+               
                 const populatedMsg = await Message.populate(message, {
                   path: 'sender',
                   select: 'username avatarUrl'
@@ -133,7 +138,6 @@ module.exports = (io) => {
                 
                 console.log('Populated message:', populatedMsg);
                 
-                // Thêm tempId vào tin nhắn nếu có
                 const messageWithTempId = {
                     ...populatedMsg.toObject(),
                     tempId
@@ -151,7 +155,6 @@ module.exports = (io) => {
             }
         });
 
-        // Tham gia phòng chat riêng
         socket.on('joinPrivateChat', (roomId) => {
             console.log(`User ${socket.userId} joined private room: ${roomId}`);
             socket.join(`private_${roomId}`);
@@ -162,11 +165,11 @@ module.exports = (io) => {
             console.log(`Socket ${socket.id} joined room ${room} (manual join)`);
         });
 
-        // Ngắt kết nối
         socket.on('disconnect', () => {
             console.log(`User disconnected: ${socket.userId}`);
-            // Thông báo người dùng offline
-            socket.broadcast.emit('userOffline', socket.userId);
+            // Xóa user khỏi danh sách online và broadcast lại danh sách
+            onlineUsers.delete(socket.userId);
+            io.emit('onlineUsers', Array.from(onlineUsers));
         });
     });
 };

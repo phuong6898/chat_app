@@ -11,8 +11,6 @@ const Sidebar = ({onChatSelect}) => {
     const [showCreateRoom, setShowCreateRoom] = useState(false);
     const {user} = useAuth();
 
-    console.log('Sidebar - Rendering with:', { activeTab, user: user ? 'present' : 'missing' });
-    
     return (
         <div className="sidebar">
             <div className="sidebar-tabs">

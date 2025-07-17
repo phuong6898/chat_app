@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './Login.css';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { authAPI } from '../../services/api';
@@ -34,7 +35,6 @@ const Login = () => {
             const loginSuccess = await login(newToken);
             
             if (loginSuccess) {
-                console.log('Login component - Login successful, navigating to chat');
                 navigate('/chat');
             } else {
                 console.error('Login component - Login failed');
@@ -42,18 +42,22 @@ const Login = () => {
             }
         } catch (err) {
             console.error('Login component - Login error:', err);
-            setError(err.response?.data?.error || 'Đăng nhập thất bại');
+            if (!err.response) {
+                setError('Không thể kết nối tới máy chủ. Server đang bảo trì, vui lòng quay lại sau!');
+            } else {
+                setError(err.response?.data?.error || 'Đăng nhập thất bại');
+            }
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="auth-container">
-            <div className="auth-form">
+        <div className="login-container">
+            <div className="login-form">
                 <h2>Đăng nhập</h2>
                 {error && <div className="error-message">{error}</div>}
-
+                
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
                         <label>Tên đăng nhập:</label>
@@ -65,7 +69,7 @@ const Login = () => {
                             required
                         />
                     </div>
-
+                    
                     <div className="form-group">
                         <label>Mật khẩu:</label>
                         <input
@@ -76,12 +80,17 @@ const Login = () => {
                             required
                         />
                     </div>
-
+                    
                     <button type="submit" disabled={loading}>
                         {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
                     </button>
                 </form>
 
+                <div className="forgot-password">
+                    <Link to="/forgot-password">Quên mật khẩu?</Link>
+                    
+                </div>
+                
                 <p>
                     Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link>
                 </p>

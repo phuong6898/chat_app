@@ -81,18 +81,27 @@ const ChatWindow = () => {
                 response = await messagesAPI.getPrivateMessages(currentChat._id);
             }
 
-            setMessages(response.data.map(msg => ({
+            const loadedMessages = response.data.map(msg => ({
                 ...msg,
                 timestamp: new Date(msg.timestamp),
                 sender: msg.sender || {_id: msg.senderId, username: 'Người dùng'}
-            })));
-            console.log('Loaded messages:', response.data);
+            }));
+            setMessages(loadedMessages);
+            // Đánh dấu đã đọc nếu là người nhận
+            if (user && loadedMessages.length > 0) {
+                const unreadIds = loadedMessages
+                    .filter(m => m.sender._id !== user.userId && (!m.readBy || !m.readBy.includes(user.userId)))
+                    .map(m => m._id);
+                if (unreadIds.length > 0) {
+                    await messagesAPI.markMessagesAsRead(unreadIds);
+                }
+            }
         } catch (error) {
             console.error('Load messages error:', error);
         } finally {
             setLoadingMessages(false);
         }
-    }, [currentChat, chatType]);
+    }, [currentChat, chatType, user]);
 
     const handleIncomingMessage = useCallback((message) => {
         console.log('Incoming message:', message, 'Current chat:', currentChat, 'Chat type:', chatType);
@@ -222,7 +231,6 @@ const ChatWindow = () => {
     };
 
     const transformMessages = (rawMsgs) => {
-        console.log('Transforming messages:', rawMsgs);
         return rawMsgs.map(msg => ({
             ...msg,
             timestamp: new Date(msg.timestamp),
@@ -233,7 +241,6 @@ const ChatWindow = () => {
     const handleChatSelect = async (chat, type) => {
         try {
             console.log('Selecting chat:', chat, 'Type:', type);
-            console.log('Chat ID type:', typeof chat._id, 'Value:', chat._id);
             
             setCurrentChat(chat);
             setChatType(type);
@@ -263,12 +270,22 @@ const ChatWindow = () => {
         }
     };
 
-    console.log('ChatWindow - Rendering with:', { 
-        user: user ? 'present' : 'missing', 
-        currentChat, 
-        messagesCount: messages.length,
-        chatType 
-    });
+    // Xử lý thu hồi hoặc xóa tin nhắn
+    const handleRecallOrDelete = async (message, isRecall) => {
+        try {
+            await messagesAPI.recallOrDeleteMessage(message._id);
+            // Sau khi thu hồi/xóa, reload lại tin nhắn
+            await loadMessages();
+        } catch (err) {
+            alert('Lỗi khi thu hồi/xóa tin nhắn!');
+        }
+    };
+    // Xử lý sao chép nội dung
+    const handleCopy = (message) => {
+        if (message.recalled) return;
+        navigator.clipboard.writeText(message.content || '');
+    };
+
     
     return (
         <>
@@ -288,7 +305,13 @@ const ChatWindow = () => {
                             ) : (
                                 <>
                                     <div className="message-list">
-                                        <MessageList messages={messages} currentUserId={user?.userId}/>
+                                        <MessageList
+                                            messages={messages}
+                                            currentUserId={user?.userId}
+                                            onRecall={msg => handleRecallOrDelete(msg, true)}
+                                            onDelete={msg => handleRecallOrDelete(msg, false)}
+                                            onCopy={handleCopy}
+                                        />
                                         <div ref={messagesEndRef}/>
                                     </div>
                                     <MessageInput onSendMessage={handleSendMessage}/>

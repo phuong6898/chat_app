@@ -1,0 +1,7 @@
+.message-hover-group .message-menu-icon {
+  display: none;
+}
+.message-hover-group:hover .message-menu-icon,
+.message-hover-group .message-menu-icon.visible {
+  display: block;
+} 

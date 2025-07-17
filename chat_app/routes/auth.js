@@ -33,5 +33,8 @@ router.post('/refresh', async (req, res) => {
         return res.sendStatus(403);
     }
 });
+router.post('/send-reset-code', authController.sendResetCode);
+router.post('/verify-reset-code', authController.verifyResetCode);
+router.post('/reset-password', authController.resetPassword);
 
 module.exports = router;
