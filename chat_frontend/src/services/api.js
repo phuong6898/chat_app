@@ -22,6 +22,9 @@ export const authAPI = {
     login: (credentials) => api.post('/auth/login', credentials),
     register: (userData) => api.post('/auth/register', userData),
     getProfile: () => api.get('/auth/profile'),
+    sendResetCode: (username) => api.post('/auth/send-reset-code', { username }),
+    verifyResetCode: (username, code) => api.post('/auth/verify-reset-code', { username, code }),
+    resetPassword: (username, code, newPassword) => api.post('/auth/reset-password', { username, code, newPassword }),
 };
 
 // Friends API

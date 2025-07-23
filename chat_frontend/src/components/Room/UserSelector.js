@@ -67,9 +67,10 @@ const UserSelector = ({ selectedUsers, onChange, excludeUser }) => {
                     {users.map(user => (
                         <li key={user._id} onClick={() => handleSelect(user)}>
                             <img
-                                src={user.avatarUrl || '/default-avatar.png'}
+                                src={user.avatar ? user.avatar : '/default-avatar.png'}
                                 alt={user.username}
                                 className="user-avatar"
+                                style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '1px solid #eee', marginRight: 8 }}
                             />
                             <span>{user.username}</span>
                         </li>

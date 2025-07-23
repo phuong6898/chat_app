@@ -76,10 +76,9 @@ const MessageList = ({ messages, currentUserId, onRecall, onDelete, onCopy }) =>
     return (
         <div className="message-list">
             {messages.map((message, idx) => {
-                // Ẩn hoàn toàn tin nhắn nếu đã xóa một phía
+                console.log('🔍 message.sender:', message.sender);
                 if (message.deletedBy && message.deletedBy.includes(currentUserId)) return null;
                 const own = isOwnMessage(message);
-                // Xử lý click vào tin nhắn để đánh dấu đã đọc nếu là người nhận
                 const handleMsgClick = async () => {
                     if (!own && (!message.readBy || !message.readBy.includes(currentUserId))) {
                         try {
@@ -122,6 +121,13 @@ const MessageList = ({ messages, currentUserId, onRecall, onDelete, onCopy }) =>
                                 </div>
                             </div>
                         )}
+                        <div className="message-avatar" style={{ marginRight: 8 }}>
+                            {message.sender && message.sender.avatar ? (
+                                <img src={message.sender.avatar} alt={message.sender.username} style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '1px solid #eee' }} />
+                            ) : (
+                                <div className="avatar-circle">{message.sender && message.sender.username ? message.sender.username.charAt(0).toUpperCase() : '?'}</div>
+                            )}
+                        </div>
                         <div style={{ maxWidth: 420, display: 'flex', flexDirection: 'column', alignItems: own ? 'flex-end' : 'flex-start' }}>
                             {!own && message.sender?.username && (
                                 <div className="message-sender">

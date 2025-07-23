@@ -60,7 +60,11 @@ const FriendList = ({ onFriendSelect }) => {
                         }}
                     >
                         <div className="friend-avatar">
-                            {friend.username.charAt(0).toUpperCase()}
+                            {friend.avatar ? (
+                                <img src={friend.avatar} alt={friend.username} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '1px solid #eee' }} />
+                            ) : (
+                                friend.username.charAt(0).toUpperCase()
+                            )}
                         </div>
                         <div className={`status-indicator ${isUserOnline(friend._id) ? 'online' : 'offline'}`}></div>
                         <div className="friend-info">

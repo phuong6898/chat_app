@@ -64,9 +64,13 @@ const UserList = ({ onUserSelect }) => {
                             onClick={() => onUserSelect(user,'private')}
                         >
                             <div className="user-avatar">
-                                <div className="avatar-circle">
-                                    {user.username.charAt(0).toUpperCase()}
-                                </div>
+                                {user.avatar ? (
+                                    <img src={user.avatar} alt={user.username} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '1px solid #eee' }} />
+                                ) : (
+                                    <div className="avatar-circle">
+                                        {user.username.charAt(0).toUpperCase()}
+                                    </div>
+                                )}
                                 <div className={`status-indicator ${isUserOnline(user._id) ? 'online' : 'offline'}`}></div>
                             </div>
 

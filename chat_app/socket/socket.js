@@ -73,7 +73,7 @@ module.exports = (io) => {
 
                 // POPULATE THÔNG TIN NGƯỜI GỬI - THÊM 'username'
                 const populatedMessage = await Message.findById(message._id)
-                    .populate('sender', 'username avatarUrl');
+                    .populate('sender', 'username avatar');
 
               
                 const responseMessage = {
@@ -83,6 +83,7 @@ module.exports = (io) => {
 
                 // GỬI TIN NHẮN ĐẾN PHÒNG
                 io.to(roomId).emit('roomMessage', responseMessage);
+                console.log('Emitting msg (room):', populatedMessage.sender.avatar);
             } catch (err) {
                 console.error('Error sending room message:', err);
             }
@@ -131,23 +132,17 @@ module.exports = (io) => {
                 
                 console.log('Message saved:', message);
                
-                const populatedMsg = await Message.populate(message, {
-                  path: 'sender',
-                  select: 'username avatarUrl'
-                });
-                
-                console.log('Populated message:', populatedMsg);
-                
+                // Sửa: Lấy lại message từ DB và populate avatar đúng chuẩn phương án 1
+                const fullMsg = await Message.findById(message._id)
+                  .populate('sender', 'username avatar');
                 const messageWithTempId = {
-                    ...populatedMsg.toObject(),
+                    ...fullMsg.toObject(),
                     tempId
                 };
-                
-                console.log('Sending message to rooms:', `user_${receiverId}`, `user_${socket.userId}`);
-                
                 // Gửi tin nhắn cho cả 2 bên
                 io.to(`user_${receiverId}`).emit('privateMessage', messageWithTempId);
                 io.to(`user_${socket.userId}`).emit('privateMessage', messageWithTempId);
+                console.log('Emitting msg (private):', fullMsg.sender.avatar);
                 callback({ message: messageWithTempId });
             } catch (err) {
                 console.error('Error sending private message:', err);

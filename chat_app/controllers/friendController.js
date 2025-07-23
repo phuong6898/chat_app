@@ -20,7 +20,7 @@ exports.getAll = async (req, res) => {
     );
     console.log('Friend IDs:', ids);
     
-    const users = await User.find({ _id: { $in: ids } }).select('_id username');
+    const users = await User.find({ _id: { $in: ids } }).select('_id username avatar');
     console.log('Friend users:', users);
     
     return res.json(users);

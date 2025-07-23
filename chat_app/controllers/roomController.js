@@ -74,8 +74,8 @@ exports.createRoom = async (req, res) => {
 
         // Populate thông tin thành viên
         const newRoom = await Room.findById(room._id)
-            .populate('members', 'username avatarUrl status')
-            .populate('createdBy', 'username avatarUrl');
+            .populate('members', 'username avatar status')
+            .populate('createdBy', 'username avatar');
 
         res.status(201).json(newRoom);
     } catch (err) {
@@ -143,8 +143,8 @@ exports.addMember = async (req, res) => {
 
         // Lấy thông tin phòng cập nhật
         const updatedRoom = await Room.findById(room._id)
-            .populate('members', 'username avatarUrl status')
-            .populate('createdBy', 'username avatarUrl');
+            .populate('members', 'username avatar status')
+            .populate('createdBy', 'username avatar');
 
         res.json(updatedRoom);
     } catch (err) {
@@ -263,8 +263,8 @@ exports.getPublicRooms = async (req, res) => {
 
         const [rooms, total] = await Promise.all([
             Room.find({ isPublic: true })
-                .populate('members', 'username avatarUrl status')
-                .populate('createdBy', 'username avatarUrl')
+                .populate('members', 'username avatar status')
+                .populate('createdBy', 'username avatar')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit),
@@ -299,8 +299,8 @@ exports.getUserRooms = async (req, res) => {
 
         // Sửa: Chỉ cần trả về dữ liệu chứ không xử lý thêm
         const rooms = await Room.find({ members: userId })
-            .populate('members', 'username avatarUrl status')
-            .populate('createdBy', 'username avatarUrl')
+            .populate('members', 'username avatar status')
+            .populate('createdBy', 'username avatar')
             .sort({ updatedAt: -1 })
             .skip(skip)
             .limit(limit)
@@ -330,8 +330,8 @@ exports.getRoomDetails = async (req, res) => {
         const userId = req.user.userId;
 
         const room = await Room.findById(roomId)
-            .populate('members', 'username avatarUrl status')
-            .populate('createdBy', 'username avatarUrl');
+            .populate('members', 'username avatar status')
+            .populate('createdBy', 'username avatar');
 
         if (!room) {
             return res.status(404).json({ error: 'Room not found' });

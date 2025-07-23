@@ -12,6 +12,7 @@ const setupSocket = require('./socket/socket');
 const userRoutes = require('./routes/users');
 const friendRequestRoutes = require('./routes/friendRequest');
 const usersRouter = require('./routes/users');
+const uploadRoutes = require('./routes/upload');
 
 const app = express();
 const server = http.createServer(app);
@@ -48,6 +49,7 @@ app.use('/api/friends', friendRoutes);
 app.use('/api/friend-requests', friendRequestRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/upload', uploadRoutes);
 // app.use('/api/users', userRoutes);
 app.use('/api/users', userRoutes);
 

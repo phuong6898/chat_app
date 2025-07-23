@@ -43,7 +43,7 @@ router.get('/private/:friendId', auth, async (req, res) => {
       ]
     })
     .sort({ timestamp: 1 })
-    .populate('sender', 'username avatarUrl');
+    .populate('sender', 'username avatar');
 
     console.log('Chat route - Found messages:', messages.length);
 
@@ -89,7 +89,7 @@ router.get('/room/:roomId', auth, async (req, res) => {
     // Lấy tin nhắn trong phòng
     const messages = await Message.find({ room: roomId })
       .sort({ timestamp: 1 })
-      .populate('sender', 'username avatarUrl');
+      .populate('sender', 'username avatar');
 
     console.log('Chat route - Found room messages:', messages.length);
 

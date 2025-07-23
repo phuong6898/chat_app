@@ -37,7 +37,7 @@ exports.getPrivateMessages = async (req, res) => {
                 { sender: friendId, receiver: userId }
             ]
         }).sort({ timestamp: 1 })
-        .populate('sender', 'username avatarUrl');
+        .populate('sender', 'username avatar');
 
         console.log('Found messages:', messages.length);
 

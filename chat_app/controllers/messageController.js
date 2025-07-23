@@ -14,7 +14,7 @@ exports.getRoomMessages = async (req, res) => {
 
         // Lấy tin nhắn
         const messages = await Message.find({ room: roomId })
-            .populate('sender', 'username avatarUrl')
+            .populate('sender', 'username avatar')
             .sort({ timestamp: 1 });
 
         res.json(messages);

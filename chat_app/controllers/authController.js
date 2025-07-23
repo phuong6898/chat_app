@@ -9,35 +9,29 @@ const resetCodes = {};
 // Đăng ký
 exports.register = async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const { username, email, password, avatar } = req.body;
 
-        // Kiểm tra username đã tồn tại chưa
-        const existingUser = await User.findOne({ username });
+        // Kiểm tra username hoặc email đã tồn tại chưa
+        const existingUser = await User.findOne({ $or: [ { username }, { email } ] });
         if (existingUser) {
-            return res.status(400).json({ error: 'Username đã tồn tại' });
+            return res.status(400).json({ error: 'Username hoặc email đã tồn tại' });
         }
 
-        // Mã hóa mật khẩu
         const hashedPassword = await bcrypt.hash(password, 10);
-        const user = new User({ username, password: hashedPassword });
+        const user = new User({ username, email, password: hashedPassword, avatar });
 
-        // Lưu user mới
         await user.save();
 
         console.log('Đăng ký thành công:', req.body);
         res.status(201).json({ message: 'User created' });
     } catch (err) {
-        // Bắt lỗi duplicate key từ MongoDB
         if (err.code === 11000) {
-            return res.status(400).json({ error: 'Username đã tồn tại (duplicate key)' });
+            return res.status(400).json({ error: 'Username hoặc email đã tồn tại (duplicate key)' });
         }
-
-        // Lỗi không xác định
         res.status(500).json({ error: 'Đã có lỗi xảy ra trên server: ' + err.message });
     }
 };
 
-// Đăng nhập
 exports.login = async (req, res) => {
     console.log('Login request body:', req.body);
     console.log('JWT_SECRET:', process.env.JWT_SECRET);
@@ -69,7 +63,6 @@ exports.login = async (req, res) => {
     }
 };
 
-// Gửi mã xác nhận về email
 exports.sendResetCode = async (req, res) => {
     try {
         const { username } = req.body;
@@ -103,7 +96,6 @@ exports.sendResetCode = async (req, res) => {
     }
 };
 
-// Xác thực mã OTP
 exports.verifyResetCode = async (req, res) => {
     try {
         const { username, code } = req.body;
@@ -121,7 +113,6 @@ exports.verifyResetCode = async (req, res) => {
     }
 };
 
-// Đặt lại mật khẩu
 exports.resetPassword = async (req, res) => {
     try {
         const { username, code, newPassword } = req.body;

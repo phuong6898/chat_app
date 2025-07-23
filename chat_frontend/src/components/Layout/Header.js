@@ -133,7 +133,18 @@ const Header = () => {
                     )}
                 </div>
 
-                <span>Xin chào, {user?.username || 'Đang tải...'}</span>
+                {user?.avatar ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <img
+                            src={user.avatar}
+                            alt="avatar"
+                            style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '1px solid #eee' }}
+                        />
+                        <span>{user.username}</span>
+                    </div>
+                ) : (
+                    <span>{user?.username || 'Đang tải...'}</span>
+                )}
                 <button onClick={handleLogout}>Đăng xuất</button>
             </div>
         </header>
