@@ -1,7 +1,9 @@
-import React, {useState, useEffect} from 'react';
-import {roomsAPI} from '../../services/api';
+import React, { useState, useEffect } from 'react';
+import { roomsAPI } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 
-const RoomList = ({onRoomSelect}) => {
+const RoomList = ({ onRoomSelect, onRoomUpdate }) => {
+    const { user } = useAuth();
     const [roomData, setRoomData] = useState({
         rooms: [],
         page: 1,
@@ -16,20 +18,12 @@ const RoomList = ({onRoomSelect}) => {
 
     const fetchRooms = async () => {
         try {
-            setRoomData(prev => ({...prev, loading: true, error: null}));
-
-            // DEBUG: Log params
-            console.log('Fetching rooms with params:', {
-                page: roomData.page,
-                limit: 20
-            });
+            setRoomData(prev => ({ ...prev, loading: true, error: null }));
 
             const response = await roomsAPI.getRooms({
                 page: roomData.page,
                 limit: 20
             });
-
-            console.log('Rooms API response:', response.data);
 
             setRoomData({
                 rooms: response.data.rooms || [],
@@ -40,14 +34,6 @@ const RoomList = ({onRoomSelect}) => {
             });
         } catch (error) {
             console.error('Error fetching rooms:', error);
-
-            // DEBUG: Log full error response
-            if (error.response) {
-                console.error('Error response data:', error.response.data);
-                console.error('Error response status:', error.response.status);
-                console.error('Error response headers:', error.response.headers);
-            }
-
             setRoomData(prev => ({
                 ...prev,
                 loading: false,
@@ -56,7 +42,11 @@ const RoomList = ({onRoomSelect}) => {
         }
     };
 
-    const {rooms, loading, error} = roomData;
+    const isRoomAdmin = (room) => {
+        return room.createdBy._id === user.userId;
+    };
+
+    const { rooms, loading, error } = roomData;
 
     if (loading) {
         return <div className="loading">Đang tải danh sách phòng...</div>;
@@ -86,46 +76,53 @@ const RoomList = ({onRoomSelect}) => {
                         style={{
                             display: 'flex',
                             alignItems: 'center',
-                            padding: '10px',
+                            padding: '12px',
                             borderBottom: '1px solid #eee',
                             cursor: 'pointer',
-                            ':hover': {
-                                backgroundColor: '#f5f5f5'
-                            }
-                        }}>
-                        <div className="room-icon" style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '50%',
-                            backgroundColor: '#007bff',
-                            color: 'white',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginRight: '10px',
-                            fontSize: '18px'
-                        }}>
-                            #
-                        </div>
-
-                        <div className="room-info">
-                            <div className="room-name" tyle={{
-                                fontWeight: 'bold',
-                                fontSize: '16px'
+                            transition: 'background-color 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                            <div className="room-icon" style={{
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '50%',
+                                backgroundColor: '#007bff',
+                                color: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                marginRight: '12px',
+                                fontSize: '18px'
                             }}>
-                                {room.name
-                                    ? room.name
-                                    : room.members
-                                        .filter(member => member._id.toString() !== room.createdBy._id.toString())
-                                        .map(member => member.username)
-                                         .join(', ')}
+                                #
                             </div>
-                            <div className="room-members" style={{
-                                fontSize: '14px',
-                                color: '#666'
-                            }}>
-                                {room.members.length} thành viên
-                                {room.isPrivate && ' (Riêng tư)'}
+
+                            <div className="room-info" style={{ flex: 1 }}>
+                                <div className="room-name" style={{
+                                    fontWeight: 'bold',
+                                    fontSize: '16px',
+                                    marginBottom: '4px'
+                                }}>
+                                    {room.name
+                                        ? room.name
+                                        : room.members
+                                            .filter(member => member._id.toString() !== room.createdBy._id.toString())
+                                            .map(member => member.username)
+                                            .join(', ')}
+                                </div>
+                                <div className="room-meta" style={{
+                                    fontSize: '14px',
+                                    color: '#666',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}>
+                                    <span>{room.members.length} thành viên</span>
+                                    {room.isPrivate && <span style={{ color: '#e74c3c' }}>• Riêng tư</span>}
+                                </div>
                             </div>
                         </div>
                     </div>

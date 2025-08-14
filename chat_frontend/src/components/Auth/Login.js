@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import './Login.css';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import './Login.css';
 import { useAuth } from '../../contexts/AuthContext';
 import { authAPI } from '../../services/api';
 
@@ -13,7 +13,13 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, currentUser } = useAuth(); 
+
+    useEffect(() => {
+        if (currentUser) {
+            navigate('/chat');
+        }
+    }, [currentUser, navigate]);
 
     const handleChange = (e) => {
         setFormData({
@@ -37,11 +43,9 @@ const Login = () => {
             if (loginSuccess) {
                 navigate('/chat');
             } else {
-                console.error('Login component - Login failed');
                 setError('Đăng nhập thất bại - không thể lấy thông tin người dùng');
             }
         } catch (err) {
-            console.error('Login component - Login error:', err);
             if (!err.response) {
                 setError('Không thể kết nối tới máy chủ. Server đang bảo trì, vui lòng quay lại sau!');
             } else {

@@ -10,9 +10,24 @@ router.use((req, res, next) => {
 });
 
 router.post('/', auth, roomController.createRoom);
-router.post('/add-member', auth, roomController.addMember);
 router.get('/', auth, roomController.getUserRooms);
 router.get('/public', auth, roomController.getPublicRooms);
+router.get('/:roomId', auth, roomController.getRoomDetails);
+router.put('/:roomId', auth, roomController.updateRoom);
+router.delete('/:roomId', auth, roomController.deleteRoom);
+
+// Join/Leave Routes
+router.post('/:roomId/join', auth, roomController.joinRoom);
+router.delete('/:roomId/leave', auth, roomController.leaveRoom);
+
+// Member Management Routes
+router.post('/:roomId/members', auth, roomController.addMember);
+router.delete('/:roomId/members/:userId', auth, roomController.removeMember);
+
+// Join Request Routes
+router.post('/:roomId/request-join', auth, roomController.requestJoinRoom);
+router.post('/:roomId/requests/:requestId/approve', auth, roomController.approveJoinRequest);
+router.post('/:roomId/requests/:requestId/reject', auth, roomController.rejectJoinRequest);
 
 // Xử lý lỗi tập trung
 router.use((err, req, res, next) => {

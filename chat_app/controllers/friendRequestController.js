@@ -77,9 +77,14 @@ exports.respond = async (req, res) => {
 
         // Emit event cho người gửi
         const toUser = await User.findById(fr.to).select('username');
+        const fromUser = await User.findById(fr.from).select('username');
         io.to(`user_${fr.from}`).emit('friendRequestAccepted', {
             byUsername: toUser.username,
             byId: toUser._id
+        });
+        io.to(`user_${fr.to}`).emit('friendRequestAccepted', {
+            byUsername: fromUser.username,
+            byId: fromUser._id
         });
 
         return res.json(fr);

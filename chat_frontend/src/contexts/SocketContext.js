@@ -16,39 +16,22 @@ export const SocketProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
     const [onlineUsers, setOnlineUsers] = useState([]);
     const { token, isAuthenticated, user } = useAuth();
-    
-    console.log('SocketProvider - Received from AuthContext:', { 
-        token: token ? 'present' : 'missing', 
-        isAuthenticated, 
-        user: user ? 'present' : 'missing' 
-    });
 
     useEffect(() => {
-        console.log('SocketContext - Effect triggered:', { 
-            isAuthenticated, 
-            token: token ? 'present' : 'missing', 
-            user: user ? 'present' : 'missing',
-            tokenValue: token ? token.substring(0, 20) + '...' : 'missing',
-            userId: user?.userId
-        });
-        
         if (isAuthenticated && token && user && user.userId) {
-            console.log('SocketContext - All conditions met, initializing socket for user:', user.userId);
-            console.log('SocketContext - Token being passed to initializeSocket:', token ? 'present' : 'missing');
+            // Đã có socket thì không khởi tạo lại
+            if (socket) return;
+
             const socketInstance = initializeSocket(token);
-            console.log('SocketContext - Socket instance created:', socketInstance ? 'success' : 'failed');
             setSocket(socketInstance);
 
             socketInstance.userId = user.userId;
-            console.log('SocketContext - Set socket userId:', user.userId);
 
             // Lắng nghe sự kiện onlineUsers (đúng tên backend gửi)
             socketInstance.on('onlineUsers', (users) => {
-                console.log('SocketContext - Users online:', users);
                 setOnlineUsers(users);
             });
             socketInstance.on('connect', () => {
-                console.log('SocketContext - Socket connected, joining room:', `user_${user.userId}`);
                 socketInstance.emit('join', { room: `user_${user.userId}` });
             });
 
@@ -58,18 +41,17 @@ export const SocketProvider = ({ children }) => {
             });
 
             return () => {
-                console.log('SocketContext - Cleaning up socket');
+                // Chỉ ngắt kết nối, không setState trong cleanup để tránh vòng lặp
                 disconnectSocket();
-                setSocket(null);
                 setOnlineUsers([]);
             };
         } else {
-            console.log('SocketContext - Not initializing socket because:', {
-                isAuthenticated,
-                hasToken: !!token,
-                hasUser: !!user,
-                hasUserId: !!(user && user.userId)
-            });
+            // Khi không authenticated hoặc không có user, disconnect socket nếu đang tồn tại
+            if (socket) {
+                disconnectSocket();
+                setSocket(null);
+                setOnlineUsers([]);
+            }
         }
     }, [isAuthenticated, token, user]);
 
@@ -80,11 +62,6 @@ export const SocketProvider = ({ children }) => {
         isConnected: socket? socket.connected : false
     };
 
-    console.log('SocketContext - Rendering with value:', {
-        socket: socket ? 'present' : 'missing',
-        onlineUsersCount: onlineUsers.length,
-        isConnected: socket? socket.connected : false
-    });
     return (
         <SocketContext.Provider value={value}>
             {children}

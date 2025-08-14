@@ -31,7 +31,6 @@ const MessageList = ({ messages, currentUserId, onRecall, onDelete, onCopy }) =>
     // Kiểm tra xem tin nhắn có phải của người dùng hiện tại không
     const isOwnMessage = (message) => {
         const senderId = message.sender?._id || message.sender;
-        // console.log('Checking message ownership:', { senderId, senderIdType: typeof senderId, currentUserId, currentUserIdType: typeof currentUserId, message });
         return senderId === currentUserId;
     };
 
@@ -69,14 +68,10 @@ const MessageList = ({ messages, currentUserId, onRecall, onDelete, onCopy }) =>
     const handlePressEnd = () => {
         clearTimeout(longPressTimeout.current);
     };
-
-
-    // console.log('MessageList - Rendering with:', { messagesCount: messages.length, currentUserId, messages: messages.map(m => ({ id: m._id, sender: m.sender?._id || m.sender, content: m.content?.substring(0, 20) + '...' })) });
     
     return (
         <div className="message-list">
             {messages.map((message, idx) => {
-                console.log('🔍 message.sender:', message.sender);
                 if (message.deletedBy && message.deletedBy.includes(currentUserId)) return null;
                 const own = isOwnMessage(message);
                 const handleMsgClick = async () => {

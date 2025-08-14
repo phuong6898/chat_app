@@ -11,7 +11,10 @@ import {ToastContainer} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {NotificationProvider} from "./contexts/NotificationContext";
 import ForgotPassword from './components/Auth/ForgotPassword';
-
+import PublicRoute from './components/Auth/PublicRoute';
+console.log({ 
+    Login, Register, ChatWindow, Header, ForgotPassword, PublicRoute 
+  });
 function App() {
     return (
         <AuthProvider>
@@ -30,11 +33,10 @@ function AppContent() {
     const { isAuthenticated, loading } = useAuth();
     return (
         <div className="App">
-            {/* Render Header chỉ khi đã đăng nhập và không loading */}
             {isAuthenticated && !loading && <Header />}
             <Routes>
-                <Route path="/login" element={<Login/>}/>
-                <Route path="/register" element={<Register/>}/>
+                <Route path="/login" element={<PublicRoute><Login /></PublicRoute>}/>
+                <Route path="/register" element={<PublicRoute><Register /></PublicRoute>}/>
                 <Route path="/chat" element={
                     <div className="chat-window">
                         <ChatWindow />

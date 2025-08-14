@@ -3,10 +3,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 
-// Biến toàn cục lưu OTP tạm thời (demo, production nên dùng cache hoặc DB)
 const resetCodes = {};
 
-// Đăng ký
 exports.register = async (req, res) => {
     try {
         const { username, email, password, avatar } = req.body;
@@ -70,12 +68,10 @@ exports.sendResetCode = async (req, res) => {
         if (!user || !user.email) {
             return res.status(404).json({ error: 'Không tìm thấy tài khoản hoặc email' });
         }
-        // Sinh mã OTP 6 số
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         // Lưu vào biến toàn cục với hạn 10 phút
         resetCodes[username] = { code, expires: Date.now() + 10 * 60 * 1000 };
 
-        // Gửi email
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
@@ -83,18 +79,35 @@ exports.sendResetCode = async (req, res) => {
                 pass: process.env.EMAIL_PASS
             }
         });
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
+        const mailOptions = {
+            from: `"Chat App" <${process.env.EMAIL_USER}>`,
             to: user.email,
-            subject: 'Mã xác nhận đặt lại mật khẩu',
-            text: `Mã xác nhận của bạn là: ${code}`
-        });
-        res.json({ message: 'Đã gửi mã xác nhận đến email' });
-    } catch (err) {
-        console.error('Send reset code error:', err);
-        res.status(500).json({ error: 'Không thể gửi mã xác nhận' });
-    }
-};
+            subject: 'Chat App – Mã xác nhận đặt lại mật khẩu',
+            text: `Chào ${user.username},\n\nCảm ơn bạn đã tham gia Chat App!\n\nMã xác nhận của bạn là: ${code}\n\nMã này có hiệu lực trong 10 phút.\nNếu bạn không yêu cầu thay đổi mật khẩu, vui lòng bỏ qua email này.\n\nChúc bạn một ngày tốt lành,\nChat App Team`,
+            html: `
+              <div style="font-family: Helvetica, Arial, sans-serif; color: #333; line-height:1.6; max-width:600px; margin:0 auto; padding:20px;">
+                <h2 style="color:#4a90e2; margin-bottom:0.5em;">Chat App</h2>
+                <p>Chào <strong>${user.username}</strong>,</p>
+                <p>Cảm ơn bạn đã tham gia <strong>Chat App</strong>! Để tiếp tục đặt lại mật khẩu, vui lòng sử dụng mã xác nhận bên dưới:</p>
+                <div style="background: #f5f8fa; border: 1px solid #e1e8ed; padding: 15px; text-align:center; margin: 20px 0; border-radius: 6px;">
+                  <span style="font-size: 2em; font-weight: bold; color: #007bff;">${code}</span>
+                </div>
+                <p style="font-size:0.9em; color:#555;">Mã này có hiệu lực trong <strong>10 phút</strong>. Nếu bạn không yêu cầu thay đổi mật khẩu, vui lòng bỏ qua email này.</p>
+                <hr style="border:none; border-top:1px solid #e1e8ed; margin:30px 0;" />
+                <p style="font-size:0.9em; color:#555;">Chúc bạn một ngày tốt lành,</p>
+                <p style="font-size:0.9em; color:#555;"><strong>Chat App Team</strong></p>
+              </div>
+            `
+          };
+          console.log('Sending mail:', mailOptions); // ← debug
+          await transporter.sendMail(mailOptions);
+      
+          return res.json({ message: 'Đã gửi mã xác nhận đến email' });
+        } catch (err) {
+          console.error(err);
+          return res.status(500).json({ error: 'Không thể gửi mã xác nhận' });
+        }
+      };
 
 exports.verifyResetCode = async (req, res) => {
     try {

@@ -40,17 +40,21 @@ export const friendsAPI = {
 
 // Rooms API
 export const roomsAPI = {
-    getRooms: (params) => api.get('/rooms',{params}),
-    getPublicRooms: (params) => api.get('/rooms/public', {params}),
+    getRooms: (params) => api.get('/rooms', { params }),
+    getPublicRooms: (params) => api.get('/rooms/public', { params }),
+    getRoomDetails: (roomId) => api.get(`/rooms/${roomId}`),
     createRoom: (roomData) => api.post('/rooms', roomData),
+    updateRoom: (roomId, roomData) => api.put(`/rooms/${roomId}`, roomData),
+    deleteRoom: (roomId) => api.delete(`/rooms/${roomId}`),
     joinRoom: (roomId) => api.post(`/rooms/${roomId}/join`),
     leaveRoom: (roomId) => api.delete(`/rooms/${roomId}/leave`),
     addMember: (roomId, userId) => api.post(`/rooms/${roomId}/members`, { userId }),
     removeMember: (roomId, userId) => api.delete(`/rooms/${roomId}/members/${userId}`),
     requestJoinRoom: (roomId) => api.post(`/rooms/${roomId}/request-join`),
+    approveJoinRequest: (roomId, requestId) => api.post(`/rooms/${roomId}/requests/${requestId}/approve`),
+    rejectJoinRequest: (roomId, requestId) => api.post(`/rooms/${roomId}/requests/${requestId}/reject`),
 };
 
-// Users API (THÊM PHẦN NÀY)
 export const usersAPI = {
     searchUsers: (query) => api.get('/users/search', { params: { query } }),
     getUser: (userId) => api.get(`/users/${userId}`),

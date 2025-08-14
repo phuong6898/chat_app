@@ -1,0 +1,522 @@
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
+}
+
+/* Image Modal Styles */
+.image-modal {
+  max-width: 400px;
+}
+
+.image-preview-container {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.image-preview {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin: 0 auto;
+  border: 3px solid #e1e8ed;
+}
+
+.image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}/* Room Details Overlay */
+.room-details-overlay {
+  /* Desktop: Overlay mờ cho phần còn lại */
+  @media (min-width: 769px) {
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    right: 25vw; /* Không che sidebar */
+    bottom: 0;
+    background-color: transparent;
+    z-index: 90;
+    cursor: pointer;
+  }
+  
+  /* Mobile: Không hiển thị overlay */
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+
+.room-details {
+  padding: 20px;
+  height: 100%;
+  overflow-y: auto;
+  background: white;
+  border-left: 1px solid #e1e8ed;
+  
+  /* Desktop: Hiển thị như sidebar bên phải */
+  @media (min-width: 769px) {
+    position: fixed;
+    top: 60;
+    right: 0;
+    width: 25%; /* 1/4 màn hình */
+    max-width: 400px;
+    min-width: 320px;
+    z-index: 100;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Mobile: Che toàn màn hình */
+  @media (max-width: 768px) {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    z-index: 1000;
+    margin-left: 0;
+  }
+}
+
+.room-details-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e1e8ed;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #6c757d;
+  padding: 5px;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.btn-close:hover {
+  background-color: #f8f9fa;
+  color: #495057;
+}
+
+/* Room Avatar Section */
+.room-avatar-section {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.room-avatar-container {
+  margin-bottom: 20px;
+  cursor: pointer;
+}
+
+.room-avatar {
+  width: 100px; /* Tăng từ 80px */
+  height: 100px;
+  border-radius: 50%;
+  margin: 0 auto;
+  background-color: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: transform 0.2s ease;
+}
+
+.room-avatar:hover {
+  transform: scale(1.05);
+}
+
+.room-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.default-avatar {
+  font-size: 32px;
+  color: #6c757d;
+}
+
+.room-name {
+  font-size: 28px; /* Tăng từ 24px */
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 15px 0; /* Tăng margin bottom */
+  text-align: center;
+}
+
+.room-description {
+  color: #333;
+  font-size: 14px;
+  margin: 10px 0 0 0;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.placeholder-text {
+  color: #bbb;
+  font-style: italic;
+}
+
+/* Separator */
+.separator {
+  height: 1px;
+  background-color: #e1e8ed;
+  margin: 20px 0; /* Tăng margin để cách đều nhau hơn */
+}
+
+/* Room Action Items */
+.room-action-item {
+  padding: 15px 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.room-action-item:hover {
+  background-color: #f8f9fa;
+  margin: 0 -20px;
+  padding: 15px 20px;
+  border-radius: 4px;
+}
+
+.action-text {
+  color: #1a1a1a;
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.leave-room .action-text {
+  color: #dc3545;
+}
+
+.leave-icon {
+  font-size: 18px;
+}
+
+.arrow-icon {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+/* Members List */
+.members-list {
+  margin-top: 10px;
+  padding-left: 20px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.member-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.member-item:last-child {
+  border-bottom: none;
+}
+
+.member-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.member-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e1e8ed;
+}
+
+.member-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.member-name {
+  font-weight: 500;
+  color: #1a1a1a;
+  font-size: 14px;
+}
+
+.member-status {
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.admin-badge {
+  background-color: #27ae60;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.member-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Button Styles */
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e1e8ed;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #1a1a1a;
+}
+
+.modal-header button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #6c757d;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.search-section {
+  margin-bottom: 20px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.searching {
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  margin-top: 10px;
+}
+
+.search-results {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.search-result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.search-result-item:hover {
+  background-color: #f8f9fa;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-name {
+  font-weight: 500;
+  color: #1a1a1a;
+  font-size: 14px;
+}
+
+.no-results {
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  padding: 20px;
+}
+
+.error-container {
+  padding: 20px;
+  text-align: center;
+}
+
+.error-message {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .room-details {
+    padding: 15px;
+  }
+  
+  .room-name {
+    font-size: 24px; /* Giảm cho mobile */
+  }
+  
+  .room-avatar {
+    width: 90px; /* Giảm cho mobile */
+    height: 90px;
+  }
+  
+  .default-avatar {
+    font-size: 28px;
+  }
+  
+  .room-action-item:hover {
+    margin: 0 -15px;
+    padding: 15px;
+  }
+  
+  .members-list {
+    padding-left: 0;
+  }
+  
+  .member-item {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+    padding: 15px 0;
+  }
+  
+  .member-actions {
+    justify-content: center;
+  }
+  
+  .modal-content {
+    width: 95%;
+    margin: 20px;
+  }
+  
+  .search-result-item {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+}
+
+/* Desktop specific styles */
+@media (min-width: 769px) {
+  .room-details {
+    border-radius: 0;
+  }
+  
+  .modal-overlay {
+    z-index: 1100; /* Cao hơn room-details */
+  }
+}
+:root {
+  --room-panel-width: 380px; /* chỉnh theo ý bạn (320..420) */
+  --header-height: 64px; 
+}

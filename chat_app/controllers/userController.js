@@ -4,7 +4,7 @@ exports.searchUsers = async (req, res) => {
   try {
     const { query } = req.query;
     let users;
-    if (query && query.length >= 2) {
+    if (query && query.length >= 1) {
       users = await User.find({
         $or: [
           { username: { $regex: query, $options: 'i' } },

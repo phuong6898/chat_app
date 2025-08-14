@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { roomsAPI } from '../../services/api';
+import { toast } from 'react-toastify';
 import UserSelector from './UserSelector'; // Component mới để chọn thành viên
 
 const CreateRoom = ({ onClose, currentUser }) => {
@@ -34,7 +35,7 @@ const CreateRoom = ({ onClose, currentUser }) => {
                 isPrivate
             });
 
-            alert(`Tạo phòng thành công!`);
+            toast.success('Tạo phòng thành công!');
             onClose(true); // Truyền true để thông báo tạo thành công
         } catch (err) {
             console.error('Create room error:', err);
@@ -62,27 +63,14 @@ const CreateRoom = ({ onClose, currentUser }) => {
                     {error && <div className="error-message">{error}</div>}
 
                     <div className="form-group">
-                        <label>
-                            <input
-                                type="checkbox"
-                                checked={!isPrivate}
-                                onChange={() => setIsPrivate(!isPrivate)}
-                            />
-                            Tạo phòng nhóm
-                        </label>
-
-                        {!isPrivate && (
-                            <>
-                                <label>Tên phòng:</label>
-                                <input
-                                    type="text"
-                                    value={roomName}
-                                    onChange={(e) => setRoomName(e.target.value)}
-                                    placeholder="Nhập tên phòng"
-                                    required
-                                />
-                            </>
-                        )}
+                        <label>Tên phòng:</label>
+                        <input
+                            type="text"
+                            value={roomName}
+                            onChange={(e) => setRoomName(e.target.value)}
+                            placeholder="Nhập tên phòng"
+                            required
+                        />
                     </div>
 
                     <div className="form-group">
@@ -97,9 +85,7 @@ const CreateRoom = ({ onClose, currentUser }) => {
                     <div className="modal-actions">
                         <button type="button" onClick={() => onClose(false)}>Hủy</button>
                         <button type="submit" disabled={loading || selectedUsers.length === 0}>
-                            {loading
-                                ? 'Đang tạo...'
-                                : isPrivate ? 'Tạo phòng riêng tư' : 'Tạo phòng nhóm'}
+                            {loading ? 'Đang tạo...' : 'Tạo phòng nhóm'}
                         </button>
                     </div>
                 </form>

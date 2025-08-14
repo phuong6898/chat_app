@@ -97,11 +97,16 @@ exports.createRoom = async (req, res) => {
     }
 };
 
-// Thêm thành viên vào phòng
 exports.addMember = async (req, res) => {
     try {
-        const { roomId, userId } = req.body;
+        // LẤY ROOM ID từ params (khớp router)
+        const roomId = req.params.roomId;
+        const { userId } = req.body;
         const currentUserId = req.user.userId;
+
+        if (!userId || !roomId) {
+            return res.status(400).json({ error: 'Thiếu roomId hoặc userId' });
+        }
 
         // Kiểm tra user thêm vào có tồn tại không
         const userToAdd = await User.findById(userId);
@@ -114,26 +119,19 @@ exports.addMember = async (req, res) => {
             return res.status(404).json({ error: 'Room not found' });
         }
 
-        // Chỉ quản trị viên phòng mới có thể thêm thành viên
-        if (room.createdBy.toString() !== currentUserId) {
-            return res.status(403).json({ error: 'Only room admin can add members' });
+        // Kiểm tra xem người dùng hiện tại có trong phòng không
+        if (!room.members.some(member => member.toString() === currentUserId)) {
+            return res.status(403).json({ error: 'Bạn phải là thành viên của phòng để thêm thành viên mới' });
         }
 
-        // Phòng riêng tư không thể thêm thành viên
         if (room.isPrivate) {
-            return res.status(400).json({
-                error: 'Cannot add members to private rooms'
-            });
+            return res.status(400).json({ error: 'Cannot add members to private rooms' });
         }
 
-        // Kiểm tra giới hạn thành viên
         if (room.members.length >= 50) {
-            return res.status(400).json({
-                error: 'Room has reached maximum capacity (50 members)'
-            });
+            return res.status(400).json({ error: 'Room has reached maximum capacity (50 members)' });
         }
 
-        // Kiểm tra xem người dùng đã có trong phòng chưa
         if (room.members.some(member => member.toString() === userId)) {
             return res.status(400).json({ error: 'User already in room' });
         }
@@ -141,7 +139,6 @@ exports.addMember = async (req, res) => {
         room.members.push(userId);
         await room.save();
 
-        // Lấy thông tin phòng cập nhật
         const updatedRoom = await Room.findById(room._id)
             .populate('members', 'username avatar status')
             .populate('createdBy', 'username avatar');
@@ -149,17 +146,10 @@ exports.addMember = async (req, res) => {
         res.json(updatedRoom);
     } catch (err) {
         console.error('Add member error:', err);
-
-        // Xử lý lỗi cast ObjectId
         if (err.name === 'CastError') {
             return res.status(400).json({ error: 'Invalid ID format' });
         }
-
-        res.status(500).json({
-            error: process.env.NODE_ENV === 'development'
-                ? err.message
-                : 'Internal server error'
-        });
+        res.status(500).json({ error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error' });
     }
 };
 
@@ -259,17 +249,24 @@ exports.getPublicRooms = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 20;
+        const query = req.query.query || '';
         const skip = (page - 1) * limit;
 
+        // Tạo filter cho tìm kiếm
+        let filter = { isPublic: true };
+        if (query.trim()) {
+            filter.name = { $regex: query, $options: 'i' };
+        }
+
         const [rooms, total] = await Promise.all([
-            Room.find({ isPublic: true })
+            Room.find(filter)
                 .populate('members', 'username avatar status')
                 .populate('createdBy', 'username avatar')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit),
 
-            Room.countDocuments({ isPublic: true })
+            Room.countDocuments(filter)
         ]);
 
         res.json({
@@ -416,6 +413,206 @@ exports.leaveRoom = async (req, res) => {
             error: process.env.NODE_ENV === 'development'
                 ? err.message
                 : 'Failed to leave room'
+        });
+    }
+};
+
+// Cập nhật thông tin phòng
+exports.updateRoom = async (req, res) => {
+    try {
+        const { roomId } = req.params;
+        const { name, description, isPublic } = req.body;
+        const userId = req.user.userId;
+
+        const room = await Room.findById(roomId);
+        if (!room) {
+            return res.status(404).json({ error: 'Không tìm thấy phòng' });
+        }
+
+        // Chỉ người tạo phòng mới có thể cập nhật
+        if (room.createdBy.toString() !== userId) {
+            return res.status(403).json({ error: 'Chỉ quản trị viên mới có quyền cập nhật phòng' });
+        }
+
+        // Không thể cập nhật phòng riêng tư
+        if (room.isPrivate) {
+            return res.status(400).json({ error: 'Không thể cập nhật phòng riêng tư' });
+        }
+
+        // Validate tên phòng
+        if (name && name.trim().length < 3) {
+            return res.status(400).json({ error: 'Tên phòng phải có ít nhất 3 ký tự' });
+        }
+
+        // Cập nhật thông tin
+        if (name !== undefined) room.name = name.trim();
+        if (description !== undefined) room.description = description;
+        if (isPublic !== undefined) room.isPublic = isPublic;
+
+        await room.save();
+
+        const updatedRoom = await Room.findById(room._id)
+            .populate('members', 'username avatar status')
+            .populate('createdBy', 'username avatar');
+
+        res.json(updatedRoom);
+    } catch (err) {
+        console.error('Update room error:', err);
+        res.status(500).json({
+            error: process.env.NODE_ENV === 'development' ? err.message : 'Không thể cập nhật phòng'
+        });
+    }
+};
+
+// Xóa phòng
+exports.deleteRoom = async (req, res) => {
+    try {
+        const { roomId } = req.params;
+        const userId = req.user.userId;
+
+        const room = await Room.findById(roomId);
+        if (!room) {
+            return res.status(404).json({ error: 'Không tìm thấy phòng' });
+        }
+
+        // Chỉ người tạo phòng mới có thể xóa
+        if (room.createdBy.toString() !== userId) {
+            return res.status(403).json({ error: 'Chỉ quản trị viên mới có quyền xóa phòng' });
+        }
+
+        await room.deleteOne();
+        res.json({ message: 'Phòng đã được xóa thành công' });
+    } catch (err) {
+        console.error('Delete room error:', err);
+        res.status(500).json({
+            error: process.env.NODE_ENV === 'development' ? err.message : 'Không thể xóa phòng'
+        });
+    }
+};
+
+// Tham gia phòng
+exports.joinRoom = async (req, res) => {
+    try {
+        const { roomId } = req.params;
+        const userId = req.user.userId;
+
+        const room = await Room.findById(roomId);
+        if (!room) {
+            return res.status(404).json({ error: 'Không tìm thấy phòng' });
+        }
+
+        // Kiểm tra nếu đã là thành viên
+        if (room.members.some(member => member.toString() === userId)) {
+            return res.status(400).json({ error: 'Bạn đã là thành viên của phòng này' });
+        }
+
+        // Kiểm tra giới hạn thành viên
+        if (room.members.length >= 1000) {
+            return res.status(400).json({ error: 'Phòng đã đạt giới hạn thành viên tối đa' });
+        }
+
+        // Thêm thành viên mới
+        room.members.push(userId);
+        await room.save();
+
+        const updatedRoom = await Room.findById(room._id)
+            .populate('members', 'username avatar status')
+            .populate('createdBy', 'username avatar');
+
+        res.json(updatedRoom);
+    } catch (err) {
+        console.error('Join room error:', err);
+        res.status(500).json({
+            error: process.env.NODE_ENV === 'development' ? err.message : 'Không thể tham gia phòng'
+        });
+    }
+};
+
+// Xóa thành viên khỏi phòng
+exports.removeMember = async (req, res) => {
+    try {
+        const { roomId, userId } = req.params;
+        const currentUserId = req.user.userId;
+
+        const room = await Room.findById(roomId);
+        if (!room) {
+            return res.status(404).json({ error: 'Không tìm thấy phòng' });
+        }
+
+        // Chỉ quản trị viên mới có thể xóa thành viên
+        if (room.createdBy.toString() !== currentUserId) {
+            return res.status(403).json({ error: 'Chỉ quản trị viên mới có quyền xóa thành viên' });
+        }
+
+        // Không thể xóa chính mình (phải dùng leave room)
+        if (userId === currentUserId) {
+            return res.status(400).json({ error: 'Không thể xóa chính mình, hãy sử dụng chức năng rời phòng' });
+        }
+
+        // Kiểm tra thành viên có trong phòng không
+        const memberIndex = room.members.findIndex(member => member.toString() === userId);
+        if (memberIndex === -1) {
+            return res.status(400).json({ error: 'Thành viên không có trong phòng' });
+        }
+
+        // Xóa thành viên
+        room.members.splice(memberIndex, 1);
+        await room.save();
+
+        const updatedRoom = await Room.findById(room._id)
+            .populate('members', 'username avatar status')
+            .populate('createdBy', 'username avatar');
+
+        res.json(updatedRoom);
+    } catch (err) {
+        console.error('Remove member error:', err);
+        res.status(500).json({
+            error: process.env.NODE_ENV === 'development' ? err.message : 'Không thể xóa thành viên'
+        });
+    }
+};
+
+// Từ chối yêu cầu tham gia
+exports.rejectJoinRequest = async (req, res) => {
+    try {
+        const { roomId, requestId } = req.params;
+        const userId = req.user.userId;
+
+        const room = await Room.findById(roomId);
+        if (!room) {
+            return res.status(404).json({ error: 'Không tìm thấy phòng' });
+        }
+
+        // Kiểm tra quyền admin
+        if (!room.createdBy.equals(userId)) {
+            return res.status(403).json({ error: 'Chỉ quản trị viên mới có quyền này' });
+        }
+
+        // Tìm và cập nhật yêu cầu
+        const request = room.joinRequests.id(requestId);
+        if (!request) {
+            return res.status(404).json({ error: 'Yêu cầu không tồn tại' });
+        }
+
+        if (request.status !== 'pending') {
+            return res.status(400).json({ error: 'Yêu cầu đã được xử lý' });
+        }
+
+        request.status = 'rejected';
+        await room.save();
+
+        res.json({ message: 'Đã từ chối yêu cầu tham gia' });
+    } catch (err) {
+        console.error('Reject join request error:', err);
+
+        if (err.name === 'CastError') {
+            return res.status(400).json({ error: 'Định dạng ID không hợp lệ' });
+        }
+
+        res.status(500).json({
+            error: process.env.NODE_ENV === 'development'
+                ? err.message
+                : 'Lỗi máy chủ nội bộ'
         });
     }
 };

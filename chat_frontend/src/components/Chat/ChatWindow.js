@@ -2,73 +2,42 @@ import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {useAuth} from '../../contexts/AuthContext';
 import {useSocket} from '../../contexts/SocketContext';
 import {
-    initializeSocket,
-    registerPrivateMessageHandler,
     sendPrivateMessage,
-    joinPrivateChat
 } from '../../services/socket';
 import {useNavigate} from 'react-router-dom';
-import {messagesAPI} from '../../services/api';
-import Header from '../Layout/Header';
+import {messagesAPI, roomsAPI} from '../../services/api';
 import Sidebar from '../Layout/Sidebar';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
+import RoomDetails from '../Room/RoomDetails';
+import { toast } from 'react-toastify';
 
 const ChatWindow = () => {
     const [messages, setMessages] = useState([]);
     const [currentChat, setCurrentChat] = useState(null);
     const [chatType, setChatType] = useState('private');
+    const [isMounted, setIsMounted] = useState(false);
     const [loadingMessages, setLoadingMessages] = useState(false);
+    const [showRoomDetails, setShowRoomDetails] = useState(false);
 
-    const {user,loading} = useAuth();
+    const {user, loading} = useAuth();
     const {socket, setSocket} = useSocket();
     const navigate = useNavigate();
     const messagesEndRef = useRef(null);
 
-    // Lắng nghe tin nhắn riêng
-    const handlePrivateMessage = useCallback((message) => {
-        if (chatType === 'private' && currentChat) {
-            console.log('Private message received:', message);
-            console.log('Private message IDs:', {
-                messageReceiver: message.receiver,
-                messageSender: message.sender,
-                currentChatId: currentChat._id,
-                messageReceiverId: message.receiver?._id,
-                messageSenderId: message.sender?._id
-            });
-            
-            // Kiểm tra cả dạng string và ObjectId
-            const isCurrentChat = 
-                (message.sender === currentChat._id || 
-                 message.receiver === currentChat._id ||
-                 (message.sender && message.sender._id === currentChat._id) || 
-                 (message.receiver && message.receiver._id === currentChat._id));
+    useEffect(() => {
+        setIsMounted(true);
+        return () => setIsMounted(false);
+    }, []);
 
-            if (isCurrentChat) {
-                setMessages(prev => {
-                    if (message.tempId) {
-                        const existingIndex = prev.findIndex(m => m._id === message.tempId);
-                        if (existingIndex !== -1) {
-                            const newMessages = [...prev];
-                            newMessages[existingIndex] = message;
-                            return newMessages;
-                        }
-                    }
-
-                    // Kiểm tra xem tin nhắn đã tồn tại chưa
-                    if (!prev.some(m => m._id === message._id)) {
-                        return [...prev, message];
-                    }
-
-                    return prev;
-                });
-            }
+    useEffect(() => {
+        if (!loading && !user) {
+            navigate('/login');
         }
-    }, [currentChat, chatType]);
+    }, [user, loading, navigate]);
 
     const loadMessages = useCallback(async () => {
-        if (!currentChat || !currentChat._id) {
-            console.log('Skipping message load: currentChat is null or missing _id');
+        if (!currentChat || !currentChat._id || !user) {
             return;
         }
         try {
@@ -86,12 +55,13 @@ const ChatWindow = () => {
                 timestamp: new Date(msg.timestamp),
                 sender: msg.sender || {_id: msg.senderId, username: 'Người dùng'}
             }));
-            setMessages(loadedMessages);
-            // Đánh dấu đã đọc nếu là người nhận
-            if (user && loadedMessages.length > 0) {
+            if (isMounted) {
+                setMessages(loadedMessages);
+                
                 const unreadIds = loadedMessages
                     .filter(m => m.sender._id !== user.userId && (!m.readBy || !m.readBy.includes(user.userId)))
                     .map(m => m._id);
+                    
                 if (unreadIds.length > 0) {
                     await messagesAPI.markMessagesAsRead(unreadIds);
                 }
@@ -99,35 +69,32 @@ const ChatWindow = () => {
         } catch (error) {
             console.error('Load messages error:', error);
         } finally {
-            setLoadingMessages(false);
+            if (isMounted) setLoadingMessages(false);
         }
-    }, [currentChat, chatType, user]);
+    }, [currentChat, chatType, user, isMounted]);
 
     const handleIncomingMessage = useCallback((message) => {
-        console.log('Incoming message:', message, 'Current chat:', currentChat, 'Chat type:', chatType);
-        console.log('Message IDs:', {
-            messageReceiver: message.receiver,
-            messageSender: message.sender,
-            currentChatId: currentChat?._id,
-            messageReceiverId: message.receiver?._id,
-            messageSenderId: message.sender?._id
-        });
-        
-        // Kiểm tra cả dạng string và ObjectId
-        const isCurrentChat = currentChat && 
-            (message.receiver === currentChat._id || 
-             message.sender === currentChat._id ||
-             (message.receiver && message.receiver._id === currentChat._id) || 
-             (message.sender && message.sender._id === currentChat._id));
-
-        if (chatType === 'private' && isCurrentChat) {
+        if (!currentChat || !user || !isMounted || !user.userId) return;
+    
+        const senderId   = message.sender?._id?.toString()   ?? message.sender?.toString();
+        const receiverId = message.receiver?._id?.toString() ?? message.receiver?.toString();
+        const currentChatId = currentChat._id?.toString();
+        const userId = user.userId?.toString();
+    
+        if (chatType === 'private') {
+            const isCurrentPrivateChat = 
+                (senderId === currentChatId && receiverId === userId) ||
+                (senderId === userId        && receiverId === currentChatId);
+    
+            if (!isCurrentPrivateChat) return;
+    
             setMessages(prev => {
                 if (message.tempId) {
-                    const existingIndex = prev.findIndex(m => m._id === message.tempId);
-                    if (existingIndex !== -1) {
-                        const newMessages = [...prev];
-                        newMessages[existingIndex] = message;
-                        return newMessages;
+                    const idx = prev.findIndex(m => m._id === message.tempId);
+                    if (idx !== -1) {
+                        const newArr = [...prev];
+                        newArr[idx] = message;
+                        return newArr;
                     }
                 }
                 if (!prev.some(m => m._id === message._id)) {
@@ -135,21 +102,25 @@ const ChatWindow = () => {
                 }
                 return prev;
             });
-        } else if (chatType === 'room' && currentChat && message.room === currentChat._id) {
+    
+        } else if (chatType === 'room') {
+            const roomId = message.room?._id?.toString() ?? message.room?.toString();
+            if (roomId !== currentChatId) return;
+    
             setMessages(prev => {
                 if (message.tempId) {
-                    const existingIndex = prev.findIndex(m => m._id === message.tempId);
-                    if (existingIndex !== -1) {
-                        const newMessages = [...prev];
-                        newMessages[existingIndex] = message;
-                        return newMessages;
+                    const idx = prev.findIndex(m => m._id === message.tempId);
+                    if (idx !== -1) {
+                        const newArr = [...prev];
+                        newArr[idx] = message;
+                        return newArr;
                     }
                 }
                 return [...prev, message];
             });
         }
-    }, [currentChat, chatType]);
-
+    }, [chatType, currentChat, user, isMounted]);
+    
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({behavior: "smooth"});
     };
@@ -159,44 +130,37 @@ const ChatWindow = () => {
     }, [messages]);
 
     useEffect(() => {
-        console.log('ChatWindow - Effect triggered:', { loading, user: user ? 'present' : 'missing', socket: socket ? 'present' : 'missing' });
+        if (!socket || !isMounted) return;
+
+        const handleRoomMsg = (msg) => {
+            if (isMounted) handleIncomingMessage(msg);
+        };
         
-        if (!loading && !user) {
-            navigate('/login');
-            return;
-        }
-
-        const unregister = registerPrivateMessageHandler(handlePrivateMessage);
-
-        if (!socket) return;
-
-        // Set up socket listeners
-        socket.on('roomMessage', handleIncomingMessage);
-        socket.on('privateMessage', handleIncomingMessage);
+        const handlePrivateMsg = (msg) => {
+            if (isMounted) handleIncomingMessage(msg);
+        };
+        socket.on('roomMessage', handleRoomMsg);
+        socket.on('privateMessage', handlePrivateMsg);
 
         return () => {
-            socket.off('roomMessage', handleIncomingMessage);
-            socket.off('privateMessage', handleIncomingMessage);
+            if (socket) {
+                socket.off('roomMessage', handleRoomMsg);
+                socket.off('privateMessage', handlePrivateMsg);
+            }
         };
-
-    }, [user, loading, navigate, socket, setSocket, handlePrivateMessage, handleIncomingMessage]);
+    }, [ socket, handleIncomingMessage, isMounted]);
 
     useEffect(() => {
-        console.log('ChatWindow - Current chat effect triggered:', { currentChat });
-        if (currentChat) {
-            (async () => {
-                await loadMessages();
-            })();
-        }
-    }, [currentChat]);
+        return () => {
+            if (socket && currentChat && chatType === 'room') {
+                socket.emit('leaveRoom', currentChat._id);
+            }
+        };
+    }, [socket, currentChat, chatType]);
 
     const handleSendMessage = async (content) => {
-        if (!currentChat || !socket || !content.trim()) return;
-        
-        console.log('Sending message to:', currentChat._id, 'Type:', typeof currentChat._id);
-        console.log('Current user ID:', user.userId, 'Type:', typeof user.userId);
+        if (!currentChat || !socket || !content.trim() || !user || !user.userId) return;
 
-        // Tạo tin nhắn tạm trước khi gui
         const tempId = `temp-${Date.now()}`;
         const tempMessage = {
             _id: tempId,
@@ -223,69 +187,94 @@ const ChatWindow = () => {
                     ));
                 }
             } catch (err) {
-                console.error('Gửi privateMessage thất bại', err);
-                // Xóa tempMessage nếu gửi thất bại
                 setMessages(prev => prev.filter(m => m._id !== tempId));
             }
         }
     };
 
-    const transformMessages = (rawMsgs) => {
-        return rawMsgs.map(msg => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp),
-            sender: msg.sender || { _id: msg.senderId, username: 'Người dùng' }
-        }));
+    const handleLeaveRoom = async () => {
+        if (!currentChat || chatType !== 'room') return;
+        
+        if (!window.confirm('Bạn có chắc chắn muốn rời khỏi phòng này?')) return;
+        
+        try {
+            await roomsAPI.leaveRoom(currentChat._id);
+            
+            // Clear current chat
+            setCurrentChat(null);
+            setChatType('private');
+            setMessages([]);
+            
+            // Leave room socket
+            if (socket) {
+                socket.emit('leaveRoom', currentChat._id);
+            }
+            
+            toast.success('Đã rời khỏi phòng thành công!');
+        } catch (error) {
+            console.error('Leave room error:', error);
+            toast.error(error.response?.data?.error || 'Không thể rời phòng');
+        }
+    };
+
+    const isRoomAdmin = () => {
+        return currentChat && currentChat.createdBy && currentChat.createdBy._id === user?.userId;
     };
 
     const handleChatSelect = async (chat, type) => {
         try {
-            console.log('Selecting chat:', chat, 'Type:', type);
-            
             setCurrentChat(chat);
             setChatType(type);
             setMessages([]);
             
             if (type === 'private') {
-                // Load tin nhắn private từ API
                 const { data } = await messagesAPI.getPrivateMessages(chat._id);
-                console.log('Private messages loaded:', data);
-                setMessages(transformMessages(data));
+                setMessages(data.map(msg => ({
+                    ...msg,
+                    timestamp: new Date(msg.timestamp),
+                    sender: msg.sender || { _id: msg.senderId, username: 'Người dùng' }
+                })));
             } else if (type === 'room') {
-                // Join room trước khi load tin nhắn
                 if (socket) {
                     socket.emit('joinRoom', chat._id);
-                    console.log('Joining room:', chat._id);
                 }
                 
-                // Load tin nhắn phòng từ API
                 const { data } = await messagesAPI.getRoomMessages(chat._id);
-                console.log('Room messages loaded:', data);
-                setMessages(transformMessages(data));
+                setMessages(data.map(msg => ({
+                    ...msg,
+                    timestamp: new Date(msg.timestamp),
+                    sender: msg.sender || { _id: msg.senderId, username: 'Người dùng' }
+                })));
             }
         } catch (error) {
-            console.error('Error selecting chat:', error);
             setCurrentChat(null);
             setMessages([]);
         }
     };
 
-    // Xử lý thu hồi hoặc xóa tin nhắn
-    const handleRecallOrDelete = async (message, isRecall) => {
+    const handleRecallOrDelete = async (message) => {
         try {
             await messagesAPI.recallOrDeleteMessage(message._id);
-            // Sau khi thu hồi/xóa, reload lại tin nhắn
             await loadMessages();
         } catch (err) {
-            alert('Lỗi khi thu hồi/xóa tin nhắn!');
+            toast.error('Lỗi khi thu hồi/xóa tin nhắn!');
         }
     };
-    // Xử lý sao chép nội dung
+   
     const handleCopy = (message) => {
         if (message.recalled) return;
         navigator.clipboard.writeText(message.content || '');
     };
 
+    // Render loading state
+    if (loading) {
+        return <div>Đang kiểm tra đăng nhập...</div>;
+    }
+
+    // Render null if no user
+    if (!user) {
+        return null;
+    }
     
     return (
         <>
@@ -295,10 +284,31 @@ const ChatWindow = () => {
                     {currentChat ? (
                         <>
                             <div className="chat-header">
-                                <h3>{currentChat.name || currentChat.username}</h3>
-                                <span className="chat-type">
-                                    {chatType === 'private' ? 'Chat riêng' : 'Phòng chat'}
-                                </span>
+                                <div className="chat-header-info">
+                                    <h3>{currentChat.name || currentChat.username}</h3>
+                                    <span className="chat-type">
+                                        {chatType === 'private' ? 'Chat riêng' : 'Phòng chat'}
+                                    </span>
+                                </div>
+                                <div className="chat-header-actions">
+                                    {chatType === 'room' && (
+                                        <button 
+                                            className="btn-room-settings"
+                                            onClick={() => setShowRoomDetails(true)}
+                                            style={{
+                                                padding: '8px',
+                                                backgroundColor: 'transparent',
+                                                border: '1px solid #ddd',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer',
+                                                fontSize: '16px'
+                                            }}
+                                            title="Cài đặt phòng"
+                                        >
+                                            ⚙️
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                             {loadingMessages ? (
                                 <div className="loading-messages">Đang tải tin nhắn...</div>
@@ -308,8 +318,8 @@ const ChatWindow = () => {
                                         <MessageList
                                             messages={messages}
                                             currentUserId={user?.userId}
-                                            onRecall={msg => handleRecallOrDelete(msg, true)}
-                                            onDelete={msg => handleRecallOrDelete(msg, false)}
+                                            onRecall={handleRecallOrDelete}
+                                            onDelete={handleRecallOrDelete}
                                             onCopy={handleCopy}
                                         />
                                         <div ref={messagesEndRef}/>
@@ -325,6 +335,18 @@ const ChatWindow = () => {
                     )}
                 </div>
             </div>
+
+            {/* Room Details Modal */}
+            {showRoomDetails && currentChat && chatType === 'room' && (
+                <RoomDetails
+                    roomId={currentChat._id}
+                    onClose={() => setShowRoomDetails(false)}
+                    onRoomUpdate={() => {
+                        // Refresh current chat data
+                        handleChatSelect(currentChat, 'room');
+                    }}
+                />
+            )}
         </>
     );
 };
